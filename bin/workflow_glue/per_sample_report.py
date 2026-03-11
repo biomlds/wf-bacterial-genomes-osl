@@ -394,6 +394,55 @@ def serotype_section(serotype_data):
     return _div
 
 
+def sistr_section(sistr_data):
+    """Extract SISTR serotyping results."""
+    columns = [
+        "Serovar",
+        "Serovar (cgMLST)",
+        "Serovar (antigen)",
+        "Serogroup",
+        "O antigen",
+        "H1 antigen",
+        "H2 antigen",
+        "Antigenic formula",
+        "cgMLST subspecies",
+        "Mash serotype",
+        "QC status"
+    ]
+    row_data = [
+        sistr_data.serovar,
+        sistr_data.serovar_cgmlst,
+        sistr_data.serovar_antigen,
+        sistr_data.serogroup,
+        sistr_data.o_antigen,
+        sistr_data.h1_antigen,
+        sistr_data.h2_antigen,
+        sistr_data.antigenic_formula,
+        sistr_data.cgmlst_subspecies,
+        sistr_data.mash_serotype,
+        sistr_data.qc_status
+    ]
+    _div = html_tags.div()
+    _table = html_tags.table(cls="table table-striped")
+    _thead = html_tags.thead()
+    _thead.add(html_tags.tr([html_tags.th(c) for c in columns]))
+    _table.add(_thead)
+    _tr = html_tags.tr()
+    for cell in row_data:
+        _tr.add(html_tags.td(fill_none(cell, fill_na='-')))
+    _table.add(_tr)
+    _div.add(_table)
+    
+    # Show QC messages if QC status is FAIL
+    if sistr_data.qc_status == "FAIL" and sistr_data.qc_messages:
+        with _div.add(html_tags.div(cls="alert alert-warning")):
+            _div.add(html_tags.strong("QC Messages: "))
+            _div.add(html_tags.br())
+            _div.add(html_tags.small(sistr_data.qc_messages))
+    
+    return _div
+
+
 def main(args):
     """Run the entry point."""
     logger = get_named_logger("Report")
@@ -465,6 +514,11 @@ def main(args):
         with report.add_section("Salmonella serotyping", "Serotype"):
             with html_tags.div(cls="row"):
                 serotype_section(sample.results.serotyping)
+
+    if sample.has_sistr():
+        with report.add_section("SISTR serotyping", "SISTR"):
+            with html_tags.div(cls="row"):
+                sistr_section(sample.results.sistr)
 
     with report.add_section('Antimicrobial resistance prediction', 'AMR', True):
         with html_tags.div(cls="accordion", id="accordionTable"):
