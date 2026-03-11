@@ -12,9 +12,9 @@ This workflow is used to produce long-read de novo assemblies of bacterial and f
 
 The workflow also performs analysis of the assemblies, such as species identification, antimicrobial resistance (AMR) analysis, and sequence typing through an optional `--isolates` mode.
 
-In brief, this workflow will perform the following: 
+In brief, this workflow will perform the following:
 
-+ De novo (or reference-based) assembly of bacterial and fungal genomes 
++ De novo (or reference-based) assembly of bacterial and fungal genomes
 + Variant calling (`--reference` mode only)
 + Annotation of regions of interest within the assembly
 + Identification of plasmid regions within the assembly
@@ -22,7 +22,7 @@ In brief, this workflow will perform the following:
 + Identify genes and SNVs associated with AMR (`--isolates` mode only)
 
 <figure>
-<img src="docs/images/wf-bac-genomes.drawio.png" alt="wf-bacterial-genomes overview schematic."/>
+<img src="../wf-bacterial-genomes/docs/images/wf-bac-genomes.drawio.png" alt="wf-bacterial-genomes overview schematic."/>
 <figcaption>Schematic depicting wf-bacterial-genomes workflow.</figcaption>
 </figure>
 
@@ -116,7 +116,7 @@ This workflow accepts either FASTQ or BAM files as input.
 The FASTQ or BAM input parameters for this workflow accept one of three cases: (i) the path to a single FASTQ or BAM file; (ii) the path to a top-level directory containing FASTQ or BAM files; (iii) the path to a directory containing one level of sub-directories which in turn contain FASTQ or BAM files. In the first and second cases (i and ii), a sample name can be supplied with `--sample`. In the last case (iii), the data is assumed to be multiplexed with the names of the sub-directories as barcodes. In this case, a sample sheet can be provided with `--sample_sheet`.
 
 ```
-(i)                     (ii)                 (iii)    
+(i)                     (ii)                 (iii)
 input_reads.fastq   ─── input_directory  ─── input_directory
                         ├── reads0.fastq     ├── barcode01
                         └── reads1.fastq     │   ├── reads0.fastq
@@ -150,7 +150,7 @@ Filtered reads are passed to fastcat to generate read statistics, including read
 
 Flye produces a draft assembly along with a statistics file containing information on contig lengths, coverage, multiplicity, and circularity. For de novo assemblies, contigs are assigned random names, whereas in reference-based assemblies, contig names are inherited from the reference sequence.
 
-#### ii. Contig reorientation 
+#### ii. Contig reorientation
 
 Following de novo assembly, circular contigs are processed with [dnaapler](https://github.com/gbouras13/dnaapler), which reorients contigs to a common start position at the origin of replication: _dnaA_ for chromosomes and _repA_ for plasmids.
 Dnaapler relies on MMseqs2-based search against a database consisting of origin of replication sequences.
@@ -200,7 +200,7 @@ Additional [mob-recon options](https://github.com/phac-nml/mob-suite) can be spe
 
 ### 4. Annotations
 
-Consensus genome assemblies can be annotated using [Bakta](https://github.com/oschwengers/bakta). 
+Consensus genome assemblies can be annotated using [Bakta](https://github.com/oschwengers/bakta).
 By default, Bakta runs with the [light database](https://github.com/oschwengers/bakta?tab=readme-ov-file#database).
 To use the "full" Bakta database or any other custom database, it must be [installed locally](https://github.com/oschwengers/bakta?tab=readme-ov-file#database-download) and provided to the workflow using the `--bakta_db` parameter. For example:
 
@@ -246,7 +246,7 @@ The full set of `sourmash gather` metrics for all matches with intersect above 2
 
 The workflow uses [GTDB R226](https://sourmash.readthedocs.io/en/latest/databases-md/gtdb226.html) bacterial and [NCBI Funal reference](https://sourmash.readthedocs.io/en/latest/databases-md/ncbi_euks_2025_01.html) genome databases.
 Sourmash behavior can be further modified by providing an exclusion list via `--sourmash_db_exclude_list` or by modifying the existing exclusion list present in `data\sourmash_db_exclude_list.txt`.
-This parameter accepts a text file containing assembly identifiers (GCA_XXXXXXXXX.V or GCF_XXXXXXXXX.V format) to exclude from the reference databases. 
+This parameter accepts a text file containing assembly identifiers (GCA_XXXXXXXXX.V or GCF_XXXXXXXXX.V format) to exclude from the reference databases.
 Excluded genomes are filtered out before species identification, allowing for removal of problematic reference sequences.
 
 #### iii. Antimicrobial resistance (AMR) calling
@@ -255,7 +255,7 @@ Excluded genomes are filtered out before species identification, allowing for re
 In addition, a subset of well-characterised species/genera will be further analysed using integrated PointFinder to identify specific resistance-associated SNVs.
 The following species/genera are included in PointFinder analysis:
 
-* _Campylobacter spp._ 
+* _Campylobacter spp._
 * _Enterococcus faecalis_
 * _Enterococcus faecium_
 * _Escherichia coli_
@@ -307,7 +307,16 @@ Samples identified as salmonella from the MLST step will undergo serotyping and 
 * H2 antigen (_fljB_)
 
 
+In addition, samples identified as salmonella will also undergo serotyping analysis using [SISTR](https://github.com/phac-nml/sistr_cmd). SISTR provides additional predictions including:
 
+* Serovar (including cgMLST-based and antigen-based)
+* Serogroup
+* Antigenic formula
+* cgMLST subspecies
+* Mash-based serotype
+* QC status and messages
+
+Note: Both SeqSero2 and SISTR are run in parallel for Salmonella samples, providing complementary serotyping information.
 
 ## Input parameters
 
