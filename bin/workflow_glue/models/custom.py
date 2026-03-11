@@ -452,6 +452,72 @@ class Serotype:
 
 
 @dataclass
+class SistrResult:
+    """SISTR Salmonella serotyping results."""
+
+    serovar: str | None = field(
+        default=None,
+        metadata={
+            "title": "Serovar",
+            "description": "Predicted serovar from SISTR analysis"})
+    serovar_cgmlst: str | None = field(
+        default=None,
+        metadata={
+            "title": "Serovar (cgMLST)",
+            "description": "Serovar prediction based on cgMLST"})
+    serovar_antigen: str | None = field(
+        default=None,
+        metadata={
+            "title": "Serovar (antigen)",
+            "description": "Serovar prediction based on antigen formula"})
+    o_antigen: str | None = field(
+        default=None,
+        metadata={
+            "title": "O antigen",
+            "description": "O antigen prediction from SISTR"})
+    h1_antigen: str | None = field(
+        default=None,
+        metadata={
+            "title": "H1 antigen",
+            "description": "H1 antigen prediction from SISTR"})
+    h2_antigen: str | None = field(
+        default=None,
+        metadata={
+            "title": "H2 antigen",
+            "description": "H2 antigen prediction from SISTR"})
+    antigenic_formula: str | None = field(
+        default=None,
+        metadata={
+            "title": "Antigenic formula",
+            "description": "Full antigenic formula from SISTR"})
+    cgmlst_subspecies: str | None = field(
+        default=None,
+        metadata={
+            "title": "cgMLST subspecies",
+            "description": "cgMLST subspecies identification"})
+    mash_serotype: str | None = field(
+        default=None,
+        metadata={
+            "title": "Mash serotype",
+            "description": "Serotype prediction from Mash analysis"})
+    serogroup: str | None = field(
+        default=None,
+        metadata={
+            "title": "Serogroup",
+            "description": "Serogroup prediction from SISTR"})
+    qc_status: str | None = field(
+        default=None,
+        metadata={
+            "title": "QC status",
+            "description": "Quality control status from SISTR"})
+    qc_messages: str | None = field(
+        default=None,
+        metadata={
+            "title": "QC messages",
+            "description": "Quality control messages from SISTR"})
+
+
+@dataclass
 class Annotation:
     """Region of interest identified within assembly."""
 
@@ -1201,6 +1267,12 @@ class ResultsContents(BaseResultsContents):
             "title": "Serotyping",
             "description": "Salmonella serotype prediction results"
         })
+    sistr: SistrResult | None = field(
+        default=None,
+        metadata={
+            "title": "SISTR serotyping",
+            "description": "SISTR Salmonella serotype prediction results"
+        })
 
 
 @dataclass
@@ -1263,6 +1335,14 @@ class Sample(BaseSample):
             self.results
             and self.results.serotyping
             and self.results.serotyping.predicted_serotype
+        )
+
+    def has_sistr(self):
+        """Check if SISTR data is available."""
+        return bool(
+            self.results
+            and self.results.sistr
+            and self.results.sistr.serovar
         )
 
     def has_species_identification(self):
