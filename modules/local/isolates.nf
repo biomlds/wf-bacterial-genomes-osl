@@ -17,10 +17,10 @@ process mlstSearch {
 process create_sourmash_picklist {
     label "sourmash"
     memory "8 GB"
-    
+
     input:
     path assemblies_to_exclude_file
-    
+
     output:
     path "sourmash_picklist.csv", emit: picklist
     path "sourmash_picklist_excluded.txt", emit: excluded_list
@@ -39,14 +39,14 @@ process create_sourmash_picklist {
 process sourmash_species_id {
     label "sourmash"
     memory "8 GB"
-    
+
     input:
     tuple val(meta), path(assembly)
     path picklist
-    
+
     output:
     tuple val(meta), path("${meta.alias}_sourmash_taxonomy.csv"), emit: taxonomy
-    
+
     script:
     """
     sourmash sketch dna --name-from-first -p k=51,scaled=10000 -o ${meta.alias}.sig ${assembly}
@@ -139,7 +139,7 @@ process resfinder {
 
     # Extract available PointFinder genes for this species (for report)
     POINTFINDER_DIR="\${CGE_RESFINDER_RESPOINT_DB}/${species}"
-    
+
     if [ -d "\${POINTFINDER_DIR}" ]; then
         # List all .fsa files, extract gene names, and exclude the species file itself
         ls "\${POINTFINDER_DIR}"/*.fsa 2>/dev/null | while read -r file; do
@@ -161,7 +161,7 @@ process serotyping {
     cpus 1
     memory "3 GB"
     errorStrategy 'ignore'
-    input: 
+    input:
         tuple val(meta), path("input_genome.fasta.gz"), val(species)
     output:
         tuple val(meta), path("${meta.alias}.serotype_results.tsv")
@@ -180,7 +180,31 @@ process serotyping {
 
     cp -r output/SeqSero_result.tsv "${meta.alias}.serotype_results.tsv"
     """
-}   
+}
+
+
+process sistr {
+    label "sistr"
+    cpus 2
+    memory "4 GB"
+    errorStrategy 'ignore'
+    input:
+        tuple val(meta), path("input_genome.fasta.gz"), val(species)
+    output:
+        tuple val(meta), path("${meta.alias}.sistr_results.json")
+    script:
+    """
+    gunzip -c input_genome.fasta.gz > input_genome.fasta
+
+    sistr --qc -vv  \
+        --use-full-cgmlst-db \
+        -m \
+        -f json \
+        -t ${task.cpus} \
+        -o "${meta.alias}.sistr_results.json" input_genome.fasta
+
+    """
+}
 
 
 workflow run_isolates {
@@ -195,7 +219,7 @@ workflow run_isolates {
       pointfinder_db
       sourmash_pointfinder_mapping
    main:
-        // MLST species ID 
+        // MLST species ID
         mlst_results = mlstSearch(consensus)
         // Sourmash species ID
         sourmash_picklist = create_sourmash_picklist(file(assemblies_to_exclude))
@@ -203,16 +227,16 @@ workflow run_isolates {
         // Prep AMR input
         species_input = mlst_results.join(sourmash_results.taxonomy)
         pointfinder_species = getPointfinderSpecies(
-            species_input, 
+            species_input,
             sourmash_pointfinder_mapping.first()
         ).map{ meta, species -> [meta, species.trim()] }
         resfinder_input = consensus.join(pointfinder_species)
-        // AMR 
+        // AMR
         amr_results = resfinder(
             resfinder_input,
             resfinder_db,
             pointfinder_db,
-            resfinder_threshold, 
+            resfinder_threshold,
             resfinder_coverage,
             pointfinder_ignore_indels,
             pointfinder_ignore_stop_codons
@@ -221,11 +245,16 @@ workflow run_isolates {
         serotype = serotyping(resfinder_input
             | filter { meta, fasta, species -> species == "salmonella" }
         )
-        
+        // SISTR serotyping
+        sistr = sistr(resfinder_input
+            | filter { meta, fasta, species -> species == "salmonella" }
+        )
+
    emit:
       amr = amr_results.map{meta, amr, species -> [meta, amr]}
       mlst = mlst_results
       serotype = serotype
+      sistr = sistr
       taxonomy = sourmash_results.taxonomy
       sourmash_excluded_genomes = sourmash_picklist.excluded_list
 }
