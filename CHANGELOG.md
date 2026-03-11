@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.2-patch]
+### Added
+- Added SISTR serotyping for Salmonella isolates using `quay.io/biocontainers/sistr_cmd:1.1.3--pyhdc42f0e_2`.
+
 ## [v2.0.2]
 ### Added
 - Implemented `fastlint` to filter low complexity reads and improve Flye assembly performance.
@@ -33,7 +37,7 @@ The v2.0.0 software release encompasses multiple internal development releases t
     - Extended Per Sample Report, to provide information about FungAMR confidence scores.
     - Extended documentation to describe usage of custom Resfinder databases.
     - Updated ResFinder docker image
-        - Updated ResFinder to v4.7.2 
+        - Updated ResFinder to v4.7.2
         - Expanded PointFinder database to include [FungAMR](https://card.mcmaster.ca/fungamrhome) mutation data for Aspergillus fumigatus, Candida albicans, Candidozyma auris, Nakaseomyces glabratus, and Saccharomyces cerevisiae.
 - Implemented [MOB-suite](https://github.com/phac-nml/mob-suite/tree/master) based plasmid identification.
     - Implements `mob-recon` for plasmid and chromosome reconstruction/typing.
@@ -271,7 +275,7 @@ This patch release of wf-bacterial-genomes updates the workflow title for displa
 - Updated resfinder version to 4.3.2
 - Removed mutation of unknown effect in SNP-mediated AMR genes output
 
-## [v0.3.0]	
+## [v0.3.0]
 ### Added
 - Isolate single sample reports
 - Include disinfectant resistance results in the report.
