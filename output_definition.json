@@ -152,6 +152,14 @@
       "optional": true,
       "type": "per-sample"
     },
+    "sistr": {
+      "filepath": "{{ alias }}.sistr_results.json",
+      "title": "SISTR serotyping results",
+      "description": "SISTR Salmonella serotype prediction results in JSON format (Salmonella isolates only).",
+      "mime-type": "application/json",
+      "optional": true,
+      "type": "per-sample"
+    },
     "per-sample-report": {
       "filepath": "{{ alias }}-isolates-report.html",
       "title": "Isolate per sample report",
