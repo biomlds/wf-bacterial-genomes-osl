@@ -415,6 +415,20 @@ process seqseroVersion {
     """
 }
 
+process sistrVersion {
+    label "sistr"
+    cpus 1
+    memory "2 GB"
+    input:
+        path "input_version.txt"
+    output:
+        path "sistr_version.txt"
+    """
+    cat "input_version.txt" >> "sistr_version.txt"
+    sistr --version 2>&1 | sed 's/ /,/' >> "sistr_version.txt"
+    """
+}
+
 process getVersions {
     label "wfbacterialgenomes"
     cpus 1
@@ -870,6 +884,7 @@ workflow calling_pipeline {
             sourmash_exclude = run_isolates.sourmash_excluded_genomes
             amr = run_isolates.amr
             serotype = run_isolates.serotype
+            sistr = run_isolates.sistr
             amr_status = amr |
                 map { meta, amr_dir -> [ meta, "complete" ] }
             
@@ -879,6 +894,7 @@ workflow calling_pipeline {
             taxonomy_results = Channel.empty()
             sourmash_exclude = Channel.empty()
             serotype = Channel.empty()
+            sistr = Channel.empty()
             amr_status = reads |
                 map { meta, reads, stats -> [ meta, "not-met" ] }
         }
@@ -895,7 +911,8 @@ workflow calling_pipeline {
         mobsuite_version = mobsuiteVersion(sourmash_version)
         resfinder_version = resfinderVersion(mobsuite_version)
         seqsero_version = seqseroVersion(resfinder_version)
-        software_versions = getVersions(seqsero_version)
+        sistr_version = sistrVersion(seqsero_version)
+        software_versions = getVersions(sistr_version)
 
         workflow_params = getParams()
 
@@ -914,11 +931,12 @@ workflow calling_pipeline {
             | join(amr.map { meta, resfinder -> [meta.alias, resfinder] }, remainder: true)
             | join(mlst.map { meta, mlst_res -> [meta.alias, mlst_res] }, remainder: true)
             | join(serotype.map { meta, sero -> [meta.alias, sero] }, remainder: true)
+            | join(sistr.map { meta, s -> [meta.alias, s] }, remainder: true)
             | join(taxonomy_results.map { meta, taxonomy -> [meta.alias, taxonomy] }, remainder: true)
             | join(mobsuite_results.map { meta, mob_res -> [meta.alias, mob_res] }, remainder: true)
             | combine(sourmash_exclude.ifEmpty([null]))
-            | map { alias, meta, stats_dir, vcf_var, vcf_st, bakta_files, fwd, rev, all, flye, amr_res, mlst_res, sero, taxonomy, mob_res, excluded  ->
-                def files = [stats_dir, vcf_var, vcf_st, flye, amr_res, mlst_res, taxonomy, sero, fwd, rev, all, mob_res, excluded]
+            | map { alias, meta, stats_dir, vcf_var, vcf_st, bakta_files, fwd, rev, all, flye, amr_res, mlst_res, sero, sistr, taxonomy, mob_res, excluded  ->
+                def files = [stats_dir, vcf_var, vcf_st, flye, amr_res, mlst_res, taxonomy, sero, sistr, fwd, rev, all, mob_res, excluded]
                 if (bakta_files) {
                     files.addAll(bakta_files)
                 }
@@ -1007,6 +1025,7 @@ workflow calling_pipeline {
             software_versions,
             run_model,
             serotype.map { meta, sero -> sero },
+            sistr.map { meta, s -> s },
             taxonomy_results.map {meta, taxonomy -> taxonomy},
             sourmash_exclude,
             mobsuite_results.map {meta, mob_res -> mob_res}
