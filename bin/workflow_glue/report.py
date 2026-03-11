@@ -740,6 +740,72 @@ def create_report(args, logger):
                                     "identified as Salmonella though MLST."
                                 )
 
+        # check if we got a SISTR result for at least one sample
+        if any(sample.has_sistr() for sample in results.samples):
+            with report.add_section("SISTR serotyping", "SISTR"):
+                html_tags.p(
+                    "Serotyping was performed using ",
+                    html_tags.a("SISTR", href="https://github.com/phac-nml/sistr_cmd"),
+                    ".",
+                    html_tags.br(),
+                    "You can use the dropdown menu to select different samples."
+                )
+                tabs = Tabs()
+                with tabs.add_dropdown_menu():
+                    for sample in results.samples:
+                        with tabs.add_dropdown_tab(sample.alias):
+                            if sample.has_sistr():
+                                sistr_data = sample.results.sistr
+                                sistr_display = {
+                                    'Serovar': fill_none(
+                                        sistr_data.serovar, fill_na
+                                    ),
+                                    'Serovar (cgMLST)': fill_none(
+                                        sistr_data.serovar_cgmlst, fill_na
+                                    ),
+                                    'Serovar (antigen)': fill_none(
+                                        sistr_data.serovar_antigen, fill_na
+                                    ),
+                                    'Serogroup': fill_none(
+                                        sistr_data.serogroup, fill_na
+                                    ),
+                                    'O antigen': fill_none(
+                                        sistr_data.o_antigen, fill_na
+                                    ),
+                                    'H1 antigen': fill_none(
+                                        sistr_data.h1_antigen, fill_na
+                                    ),
+                                    'H2 antigen': fill_none(
+                                        sistr_data.h2_antigen, fill_na
+                                    ),
+                                    'Antigenic formula': fill_none(
+                                        sistr_data.antigenic_formula, fill_na
+                                    ),
+                                    'cgMLST subspecies': fill_none(
+                                        sistr_data.cgmlst_subspecies, fill_na
+                                    ),
+                                    'Mash serotype': fill_none(
+                                        sistr_data.mash_serotype, fill_na
+                                    ),
+                                    'QC status': fill_none(
+                                        sistr_data.qc_status, fill_na
+                                    )
+                                }
+                                df = pd.DataFrame([sistr_display])
+                                DataTable.from_pandas(df, use_index=False)
+                                # Show QC messages if QC status is FAIL
+                                if sistr_data.qc_status == "FAIL" and sistr_data.qc_messages:
+                                    html_tags.br()
+                                    with html_tags.div(cls="alert alert-warning"):
+                                        html_tags.strong("QC Messages: ")
+                                        html_tags.br()
+                                        html_tags.small(sistr_data.qc_messages)
+                            else:
+                                html_tags.b(
+                                    "SISTR is only available for isolates ",
+                                    "identified as Salmonella through MLST."
+                                )
+
     with report.add_section("Genome coverage", "Depth"):
         html_tags.p(
             "The plot below illustrates depth of coverage. For adequate variant "
