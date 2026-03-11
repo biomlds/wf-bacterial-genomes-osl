@@ -10,7 +10,7 @@ from workflow_glue.models.custom import (
     Annotation, AntimicrobialResistance, Assembly,
     Contig, ContigType, Coverage, FastqStats, FlyeContigStats, MLST,
     PlasmidID, PlasmidIdentification, ResultsContents,
-    Sample, SequenceTypeSchema, Serotype, SourmashExcludedAssemblies,
+    Sample, SequenceTypeSchema, Serotype, SistrResult, SourmashExcludedAssemblies,
     SourmashMatch, SpeciesIdentification, Variant
 )
 
@@ -46,6 +46,8 @@ def gather_sample_files(alias, data_dir):
             data_dir, f"{alias}.flye_stats.tsv"),
         "serotype": os.path.join(
             data_dir, f"{alias}.serotype_results.tsv"),
+        "sistr": os.path.join(
+            data_dir, f"{alias}.sistr_results.json"),
         "taxonomy": os.path.join(
             data_dir, f"{alias}_sourmash_taxonomy.csv"),
         "excluded_assemblies": os.path.join(
@@ -235,6 +237,39 @@ def parse_serotyping(serotype_file):
             sero_df["Note"].squeeze())
     )
     return serotype
+
+
+def parse_sistr(sistr_file):
+    """Extract SISTR serotyping information from JSON output."""
+    if not sistr_file or not os.path.exists(sistr_file):
+        return SistrResult()
+    
+    with open(sistr_file, 'r') as f:
+        sistr_data = json.load(f)
+    
+    if not sistr_data or len(sistr_data) == 0:
+        return SistrResult()
+    
+    sistr_result = sistr_data[0]
+    
+    def safe_get(key):
+        val = sistr_result.get(key)
+        return val if val else None
+    
+    return SistrResult(
+        serovar=safe_get("serovar"),
+        serovar_cgmlst=safe_get("serovar_cgmlst"),
+        serovar_antigen=safe_get("serovar_antigen"),
+        o_antigen=safe_get("o_antigen"),
+        h1_antigen=safe_get("h1"),
+        h2_antigen=safe_get("h2"),
+        antigenic_formula=safe_get("antigenic_formula"),
+        cgmlst_subspecies=safe_get("cgmlst_subspecies"),
+        mash_serotype=safe_get("mash_serovar"),
+        serogroup=safe_get("serogroup"),
+        qc_status=safe_get("qc_status"),
+        qc_messages=safe_get("qc_messages")
+    )
 
 
 def annotation_stats(bakta_file):
@@ -531,6 +566,11 @@ def main(args):
     else:
         serotype = Serotype()
 
+    if files["sistr"]:
+        sistr = parse_sistr(files["sistr"])
+    else:
+        sistr = SistrResult()
+
     if files["fastcat"]:
         fastcat = fastcat_stats(
             files["fastcat"]
@@ -562,6 +602,7 @@ def main(args):
         sequence_typing=sequence_type,
         species_identification=species_identification,
         serotyping=serotype,
+        sistr=sistr,
         fastq=fastcat,
         sourmash_excluded_genomes=sourmash_excluded,
         plasmid_identification=plasmid_identification
